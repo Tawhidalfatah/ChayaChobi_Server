@@ -14,7 +14,7 @@ const verifyJWT = (req, res, next) => {
   if (!authorization) {
     return res
       .status(401)
-      .send({ error: true, message: "unauthorized access" });
+      .send({ error: true, message: "Unauthorized Access" });
   }
   // bearer token from the client side
   const token = authorization.split(" ")[1];
@@ -23,7 +23,7 @@ const verifyJWT = (req, res, next) => {
     if (err) {
       return res
         .status(401)
-        .send({ error: true, message: "unauthorized access" });
+        .send({ error: true, message: "Unauthorized Access" });
     }
     req.decoded = decoded;
     next();
@@ -138,6 +138,12 @@ async function run() {
         .sort({ enrolled_students_quantity: -1 })
         .limit(6)
         .toArray();
+      res.send(result);
+    });
+
+    app.post("/addclass", verifyJWT, verifyInstructor, async (req, res) => {
+      const newClass = req.body;
+      const result = await classesCollection.insertOne(newClass);
       res.send(result);
     });
 
