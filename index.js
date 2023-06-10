@@ -200,6 +200,35 @@ async function run() {
     });
 
     app.patch(
+      "/class/approve/:id",
+      verifyJWT,
+      verifyAdmin,
+      async (req, res) => {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+        const updateDoc = {
+          $set: {
+            status: "approved",
+          },
+        };
+        const result = await classesCollection.updateOne(query, updateDoc);
+        res.send(result);
+      }
+    );
+
+    app.patch("/class/deny/:id", verifyJWT, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          status: "denied",
+        },
+      };
+      const result = await classesCollection.updateOne(query, updateDoc);
+      res.send(result);
+    });
+
+    app.patch(
       "/classes/feedback/:id",
       verifyJWT,
       verifyAdmin,
