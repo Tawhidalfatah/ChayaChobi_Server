@@ -132,6 +132,39 @@ async function run() {
       res.send(result);
     });
 
+    app.patch(
+      "/user/admin/:email",
+      verifyJWT,
+      verifyAdmin,
+      async (req, res) => {
+        const email = req.params.email;
+        const query = { email: email };
+        const updateDoc = {
+          $set: {
+            role: "admin",
+          },
+        };
+        const result = await usersCollection.updateOne(query, updateDoc);
+        res.send(result);
+      }
+    );
+    app.patch(
+      "/user/instructor/:email",
+      verifyJWT,
+      verifyAdmin,
+      async (req, res) => {
+        const email = req.params.email;
+        const query = { email: email };
+        const updateDoc = {
+          $set: {
+            role: "instructor",
+          },
+        };
+        const result = await usersCollection.updateOne(query, updateDoc);
+        res.send(result);
+      }
+    );
+
     app.get("/popularclasses", async (req, res) => {
       const result = await classesCollection
         .find()
