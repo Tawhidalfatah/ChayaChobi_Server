@@ -60,7 +60,7 @@ async function run() {
     const verifyAdmin = async (req, res, next) => {
       const email = req.decoded.email;
       const query = { email: email };
-      const user = await userCollection.findOne(query);
+      const user = await usersCollection.findOne(query);
       if (user?.role !== "admin") {
         return res
           .status(403)
@@ -81,7 +81,7 @@ async function run() {
       next();
     };
 
-    app.get("/users", async (req, res) => {
+    app.get("/allusers", verifyJWT, verifyAdmin, async (req, res) => {
       const result = await usersCollection.find().toArray();
       res.send(result);
     });
