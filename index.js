@@ -2,7 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const app = express();
 const jwt = require("jsonwebtoken");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 const port = process.env.PORT || 5000;
 
@@ -165,6 +165,11 @@ async function run() {
       }
     );
 
+    app.get("/allclasses", verifyJWT, verifyAdmin, async (req, res) => {
+      const result = await classesCollection.find().toArray();
+      res.send(result);
+    });
+
     app.get("/popularclasses", async (req, res) => {
       const result = await classesCollection
         .find()
@@ -180,19 +185,38 @@ async function run() {
       verifyInstructor,
       async (req, res) => {
         const email = req.params.email;
-        console.log(email);
+
         const query = { instructor_email: email };
         const result = await classesCollection.find(query).toArray();
-        console.log(result);
+
         res.send(result);
       }
     );
 
-    app.post("/addclass", verifyJWT, verifyInstructor, async (req, res) => {
+    app.post("/addclass", async (req, res) => {
       const newClass = req.body;
       const result = await classesCollection.insertOne(newClass);
       res.send(result);
     });
+
+    app.patch(
+      "/classes/feedback/:id",
+      verifyJWT,
+      verifyAdmin,
+      async (req, res) => {
+        const id = req.params.id;
+        const { feedback } = req.body;
+        console.log(id, feedback);
+        const query = { _id: new ObjectId(id) };
+        const updateDoc = {
+          $set: {
+            feedback: feedback,
+          },
+        };
+        const result = await classesCollection.updateOne(query, updateDoc);
+        res.send(result);
+      }
+    );
 
     await client.db("admin").command({ ping: 1 });
     console.log(
