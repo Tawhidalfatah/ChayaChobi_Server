@@ -170,6 +170,13 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/approvedclasses", async (req, res) => {
+      const result = await classesCollection
+        .find({ status: "approved" })
+        .toArray();
+      res.send(result);
+    });
+
     app.get("/popularclasses", async (req, res) => {
       const result = await classesCollection
         .find()
@@ -193,7 +200,7 @@ async function run() {
       }
     );
 
-    app.post("/addclass", async (req, res) => {
+    app.post("/addclass", verifyJWT, verifyInstructor, async (req, res) => {
       const newClass = req.body;
       const result = await classesCollection.insertOne(newClass);
       res.send(result);
