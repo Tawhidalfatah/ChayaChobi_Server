@@ -47,6 +47,9 @@ async function run() {
 
     const classesCollection = client.db("chayachobi").collection("classes");
     const usersCollection = client.db("chayachobi").collection("users");
+    const selectedCollection = client
+      .db("chayachobi")
+      .collection("selectedClasses");
 
     app.post("/jwt", (req, res) => {
       const user = req.body;
@@ -190,6 +193,28 @@ async function run() {
         .sort({ enrolled_students_quantity: -1 })
         .limit(6)
         .toArray();
+      res.send(result);
+    });
+
+    app.get("/selectedclasses/:email", verifyJWT, async (req, res) => {
+      const email = req.params.email;
+      const query = { student_email: email };
+      const result = await selectedCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    app.delete("/selectedclass/:id", verifyJWT, async (req, res) => {
+      const id = req.params.id;
+      console.log(id);
+      const query = { _id: new ObjectId(id) };
+      const result = await selectedCollection.deleteOne(query);
+
+      res.send(result);
+    });
+
+    app.post("/selectedclasses", verifyJWT, async (req, res) => {
+      const selectedClass = req.body;
+      const result = await selectedCollection.insertOne(selectedClass);
       res.send(result);
     });
 
