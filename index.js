@@ -5,6 +5,7 @@ const jwt = require("jsonwebtoken");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 const port = process.env.PORT || 5000;
+const stripe = require("stripe")(process.env.PAYMENT_SECRET_KEY);
 
 app.use(cors());
 app.use(express.json());
@@ -50,6 +51,23 @@ async function run() {
     const selectedCollection = client
       .db("chayachobi")
       .collection("selectedClasses");
+    const enrolledCollection = client
+      .db("chayachobi")
+      .collection("enrolledClasses");
+
+    app.post("/create-payment-intent", verifyJWT, async (req, res) => {
+      const { price } = req.body;
+      console.log(price);
+      if (price) {
+        const amount = parseFloat(price) * 100;
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount: amount,
+          currency: "usd",
+          payment_method_types: ["card"],
+        });
+        res.send({ clientSecret: paymentIntent.client_secret });
+      }
+    });
 
     app.post("/jwt", (req, res) => {
       const user = req.body;
@@ -200,6 +218,12 @@ async function run() {
       const email = req.params.email;
       const query = { student_email: email };
       const result = await selectedCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    app.post("/enrolledclasses", verifyJWT, async (req, res) => {
+      const enrolledClass = req.body;
+      const result = await enrolledCollection.insertOne(enrolledClass);
       res.send(result);
     });
 
