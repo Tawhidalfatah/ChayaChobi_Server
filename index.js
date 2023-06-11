@@ -57,7 +57,7 @@ async function run() {
 
     app.post("/create-payment-intent", verifyJWT, async (req, res) => {
       const { price } = req.body;
-      console.log(price);
+
       if (price) {
         const amount = parseFloat(price) * 100;
         const paymentIntent = await stripe.paymentIntents.create({
@@ -223,13 +223,24 @@ async function run() {
 
     app.post("/enrolledclasses", verifyJWT, async (req, res) => {
       const enrolledClass = req.body;
+      const { class_id } = enrolledClass;
       const result = await enrolledCollection.insertOne(enrolledClass);
+
+      const updatedClassResult = await classesCollection.updateOne(
+        { _id: new ObjectId(class_id) },
+        {
+          $inc: {
+            available_seats: -1,
+            enrolled_students_quantity: 1,
+          },
+        }
+      );
       res.send(result);
     });
 
     app.delete("/selectedclass/:id", verifyJWT, async (req, res) => {
       const id = req.params.id;
-      console.log(id);
+
       const query = { _id: new ObjectId(id) };
       const result = await selectedCollection.deleteOne(query);
 
@@ -298,7 +309,7 @@ async function run() {
       async (req, res) => {
         const id = req.params.id;
         const { feedback } = req.body;
-        console.log(id, feedback);
+
         const query = { _id: new ObjectId(id) };
         const updateDoc = {
           $set: {
