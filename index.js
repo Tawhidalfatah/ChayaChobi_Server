@@ -221,6 +221,23 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/enrolledclasses/:email", verifyJWT, async (req, res) => {
+      const email = req.params.email;
+      const query = { student_email: email };
+      const result = await enrolledCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    app.get("/payhistory/:email", verifyJWT, async (req, res) => {
+      const email = req.params.email;
+      const query = { student_email: email };
+      const result = await enrolledCollection
+        .find(query)
+        .sort({ date: -1 })
+        .toArray();
+      res.send(result);
+    });
+
     app.post("/enrolledclasses", verifyJWT, async (req, res) => {
       const enrolledClass = req.body;
       const { class_id } = enrolledClass;
