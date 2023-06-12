@@ -207,8 +207,17 @@ async function run() {
 
     app.get("/popularclasses", async (req, res) => {
       const result = await classesCollection
-        .find()
+        .find({ status: "approved" })
         .sort({ enrolled_students_quantity: -1 })
+        .limit(6)
+        .toArray();
+      res.send(result);
+    });
+
+    app.get("/popularinstructors", async (req, res) => {
+      // TODO sort by popular with enrolled students quantity
+      const result = await usersCollection
+        .find({ role: "instructor" })
         .limit(6)
         .toArray();
       res.send(result);
