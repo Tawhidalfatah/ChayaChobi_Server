@@ -1,15 +1,18 @@
+// Required packages
 const express = require("express");
 const cors = require("cors");
 const app = express();
 const jwt = require("jsonwebtoken");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
-const port = process.env.PORT || 5000;
 const stripe = require("stripe")(process.env.PAYMENT_SECRET_KEY);
+const port = process.env.PORT || 5000;
 
+// Middlewares
 app.use(cors());
 app.use(express.json());
 
+// JWT token verify middleware
 const verifyJWT = (req, res, next) => {
   const authorization = req.headers.authorization;
   if (!authorization) {
@@ -31,9 +34,10 @@ const verifyJWT = (req, res, next) => {
   });
 };
 
+// Mongodb uri
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.4xnjt3a.mongodb.net/?retryWrites=true&w=majority`;
 
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
+// Mongodb client connection
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
@@ -46,6 +50,7 @@ async function run() {
   try {
     await client.connect();
 
+    // Mongodb collections
     const classesCollection = client.db("chayachobi").collection("classes");
     const usersCollection = client.db("chayachobi").collection("users");
     const selectedCollection = client
@@ -55,6 +60,7 @@ async function run() {
       .db("chayachobi")
       .collection("enrolledClasses");
 
+    // Payment intent for stripe
     app.post("/create-payment-intent", verifyJWT, async (req, res) => {
       const { price } = req.body;
 
@@ -69,6 +75,7 @@ async function run() {
       }
     });
 
+    // jwt token generator
     app.post("/jwt", (req, res) => {
       const user = req.body;
       const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
@@ -78,6 +85,7 @@ async function run() {
       res.send({ token });
     });
 
+    // Admin role verify middleware
     const verifyAdmin = async (req, res, next) => {
       const email = req.decoded.email;
       const query = { email: email };
@@ -90,6 +98,7 @@ async function run() {
       next();
     };
 
+    // Instructor role verify middleware
     const verifyInstructor = async (req, res, next) => {
       const email = req.decoded.email;
       const query = { email: email };
@@ -102,11 +111,13 @@ async function run() {
       next();
     };
 
+    // all users get api for admin
     app.get("/allusers", verifyJWT, verifyAdmin, async (req, res) => {
       const result = await usersCollection.find().toArray();
       res.send(result);
     });
 
+    // all instructors get api for users
     app.get("/allinstructors", async (req, res) => {
       const result = await usersCollection
         .find({ role: "instructor" })
@@ -114,6 +125,7 @@ async function run() {
       res.send(result);
     });
 
+    // post api for user information after registration/login
     app.post("/users", async (req, res) => {
       const user = req.body;
       const query = { email: user.email };
@@ -138,7 +150,7 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/users/admin/:email", verifyJWT, async (req, res) => {
+    app.get("/users/admin/:email", verifyJWT, verifyAdmin, async (req, res) => {
       const email = req.params.email;
       if (req.decoded.email !== email) {
         res.send({ admin: false });
@@ -149,16 +161,21 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/users/instructor/:email", verifyJWT, async (req, res) => {
-      const email = req.params.email;
-      if (req.decoded.email !== email) {
-        res.send({ instructor: false });
+    app.get(
+      "/users/instructor/:email",
+      verifyJWT,
+      verifyInstructor,
+      async (req, res) => {
+        const email = req.params.email;
+        if (req.decoded.email !== email) {
+          res.send({ instructor: false });
+        }
+        const query = { email: email };
+        const user = await usersCollection.findOne(query);
+        const result = { instructor: user?.role === "instructor" };
+        res.send(result);
       }
-      const query = { email: email };
-      const user = await usersCollection.findOne(query);
-      const result = { instructor: user?.role === "instructor" };
-      res.send(result);
-    });
+    );
 
     app.patch(
       "/user/admin/:email",
